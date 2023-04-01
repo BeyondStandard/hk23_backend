@@ -1,15 +1,16 @@
+from typing import Any, Union
 from bson import ObjectId
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pymongo import MongoClient
 
-from app.models import POIRepository
+from app.models import POI
 
 app = FastAPI(title="HK23 API")
 
 mongo_client = MongoClient("mongodb+srv://fetch:ZydcdimtEoYVat51@maincluster.fc2z1.mongodb.net/")
 database = mongo_client["data"]
-poi_repository = POIRepository(database=database)
+poi_repository = database.poi
 
 origins = [
     "http://localhost:3000",
@@ -32,10 +33,13 @@ async def read_main():
     return {"msg": "Hello World !!!!"}
 
 
-@app.get("/point_of_interest/{id}")
-async def get_point_of_interest(id: str):
-    result = poi_repository.find_one_by_id(ObjectId(id))
-    return result
+@app.get("/points_of_interest/{field}/{value}")
+async def get_point_of_interest(field: str, value: Union[str, int], limit: int = 5):
+    if field in ["_id", "id"]:
+        result = POI(**poi_repository.find_one({"_id": ObjectId(str(value))}))
+    else:
+        result = [POI(**x) for x in poi_repository.find({field: value}, limit=limit)]
+    return { "result": result }
 
 # @app.get("/get_user_by_id")
 # async def get_user(user_id: str):
