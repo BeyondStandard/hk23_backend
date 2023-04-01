@@ -1,9 +1,15 @@
+from bson import ObjectId
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from pymongo import MongoClient
 
-from utils.utilities import *
+from app.models import POIRepository
 
 app = FastAPI(title="HK23 API")
+
+mongo_client = MongoClient("mongodb+srv://fetch:ZydcdimtEoYVat51@maincluster.fc2z1.mongodb.net/")
+database = mongo_client["data"]
+poi_repository = POIRepository(database=database)
 
 origins = [
     "http://localhost:3000",
@@ -26,27 +32,32 @@ async def read_main():
     return {"msg": "Hello World !!!!"}
 
 
-@app.get("/get_user_by_id")
-async def get_user(user_id: str):
-    data = read_json("people_v3.json")
-    user = list(filter(lambda p_id: p_id["id"] == user_id, data))[0]
-    return user
+@app.get("/point_of_interest/{id}")
+async def get_point_of_interest(id: str):
+    result = poi_repository.find_one_by_id(ObjectId(id))
+    return result
+
+# @app.get("/get_user_by_id")
+# async def get_user(user_id: str):
+#     data = read_json("people_v3.json")
+#     user = list(filter(lambda p_id: p_id["id"] == user_id, data))[0]
+#     return user
 
 
-@app.get("/get_stations")
-async def get_stations():
-    stations = read_json("stations_v2.json")
-    return stations
+# @app.get("/get_stations")
+# async def get_stations():
+#     stations = read_json("stations_v2.json")
+#     return stations
 
 
-@app.get("/get_charging_stations")
-async def get_charging_stations():
-    charging_stations = read_json("charging_stations.json")
-    return charging_stations
+# @app.get("/get_charging_stations")
+# async def get_charging_stations():
+#     charging_stations = read_json("charging_stations.json")
+#     return charging_stations
 
 
-@app.get("/get_all_users")
-async def get_all_users():
-    users = read_json("people_v3.json")
-    return users
+# @app.get("/get_all_users")
+# async def get_all_users():
+#     users = read_json("people_v3.json")
+#     return users
 
