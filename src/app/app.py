@@ -1,16 +1,15 @@
-from typing import Any, Union
+from typing import Any, Optional, Union
 from bson import ObjectId
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pymongo import MongoClient
 
-from app.models import POI
+from app.models import BikeRoute, POI
 
 app = FastAPI(title="HK23 API")
 
 mongo_client = MongoClient("mongodb+srv://fetch:ZydcdimtEoYVat51@maincluster.fc2z1.mongodb.net/")
 database = mongo_client["data"]
-poi_repository = database.poi
 
 origins = [
     "http://localhost:3000",
@@ -33,8 +32,8 @@ async def read_main():
     return {"msg": "Hello World !!!!"}
 
 
-@app.get("/points_of_interest/{field}/{value}")
-async def get_point_of_interest(field: str, value: Union[str, int], limit: int = 5, poly_5: bool = False, poly_10: bool = False, poly_15: bool = False, poly_20: bool = False):
+@app.get("/points_of_interest")
+async def get_points_of_interest(field: Optional[str] = None, value: Optional[Union[str, int]] = None, limit: int = 20, poly_5: bool = False, poly_10: bool = False, poly_15: bool = False, poly_20: bool = False):
     excludes = {"poly_5": 0, "poly_10": 0, "poly_15": 0, "poly_20": 0}
     if poly_5:
         del excludes["poly_5"]
@@ -45,33 +44,24 @@ async def get_point_of_interest(field: str, value: Union[str, int], limit: int =
     if poly_20:
         del excludes["poly_20"]
 
-    if field in ["_id", "id"]:
-        result = POI(**poi_repository.find_one({"_id": ObjectId(str(value))}, excludes))
+    if not field or not value:
+        result = [POI(**x) for x in database.poi.find({}, excludes, limit=limit)]
+    elif field in ["_id", "id"]:
+        result = POI(**database.poi.find_one({"_id": ObjectId(str(value))}, excludes))
     else:
-        result = [POI(**x) for x in poi_repository.find({field: value}, excludes, limit=limit)]
+        result = [POI(**x) for x in database.poi.find({field: value}, excludes, limit=limit)]
     return { "result": result }
 
-# @app.get("/get_user_by_id")
-# async def get_user(user_id: str):
-#     data = read_json("people_v3.json")
-#     user = list(filter(lambda p_id: p_id["id"] == user_id, data))[0]
-#     return user
+@app.get("/bike_routes")
+async def get_bike_routes(field: Optional[str] = None, value: Optional[Union[str, int]] = None, limit: int = 20, location: bool = False):
+    excludes = {"location": 0}
+    if location:
+        del excludes["location"]
 
-
-# @app.get("/get_stations")
-# async def get_stations():
-#     stations = read_json("stations_v2.json")
-#     return stations
-
-
-# @app.get("/get_charging_stations")
-# async def get_charging_stations():
-#     charging_stations = read_json("charging_stations.json")
-#     return charging_stations
-
-
-# @app.get("/get_all_users")
-# async def get_all_users():
-#     users = read_json("people_v3.json")
-#     return users
-
+    if not field or not value:        
+        result = [BikeRoute(**x) for x in database.bike_routes.find({}, excludes, limit=limit)]
+    elif field in ["_id", "id"]:
+        result = BikeRoute(**database.bike_routes.find_one({"_id": ObjectId(str(value))}, excludes))
+    else:
+        result = [BikeRoute(**x) for x in database.bike_routes.find({field: value}, excludes, limit=limit)]
+    return { "result": result }
