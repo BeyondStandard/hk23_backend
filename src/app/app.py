@@ -34,11 +34,21 @@ async def read_main():
 
 
 @app.get("/points_of_interest/{field}/{value}")
-async def get_point_of_interest(field: str, value: Union[str, int], limit: int = 5):
+async def get_point_of_interest(field: str, value: Union[str, int], limit: int = 5, poly_5: bool = False, poly_10: bool = False, poly_15: bool = False, poly_20: bool = False):
+    excludes = {"poly_5": 0, "poly_10": 0, "poly_15": 0, "poly_20": 0}
+    if poly_5:
+        del excludes["poly_5"]
+    if poly_10:
+        del excludes["poly_10"]
+    if poly_15:
+        del excludes["poly_15"]
+    if poly_20:
+        del excludes["poly_20"]
+
     if field in ["_id", "id"]:
-        result = POI(**poi_repository.find_one({"_id": ObjectId(str(value))}))
+        result = POI(**poi_repository.find_one({"_id": ObjectId(str(value))}, excludes))
     else:
-        result = [POI(**x) for x in poi_repository.find({field: value}, limit=limit)]
+        result = [POI(**x) for x in poi_repository.find({field: value}, excludes, limit=limit)]
     return { "result": result }
 
 # @app.get("/get_user_by_id")

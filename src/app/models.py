@@ -32,10 +32,10 @@ class POI(PydanticMongoBase):
     category_1: str
     category_2: str
     location: Point
-    poly_5: Polygon
-    poly_10: Polygon
-    poly_15: Polygon
-    poly_20: Polygon
+    poly_5: Optional[Polygon]
+    poly_10: Optional[Polygon]
+    poly_15: Optional[Polygon]
+    poly_20: Optional[Polygon]
 
 
 if __name__ == "__main__":
