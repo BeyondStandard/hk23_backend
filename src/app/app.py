@@ -4,12 +4,14 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pymongo import MongoClient
 
-from app.models import BikeRoute, POI
+from app.models import BikeRoute, POI, District
 
 app = FastAPI(title="HK23 API")
 
 mongo_client = MongoClient("mongodb+srv://fetch:ZydcdimtEoYVat51@maincluster.fc2z1.mongodb.net/")
 database = mongo_client["data"]
+
+DEFAULT_LIMIT = 50
 
 origins = [
     "http://localhost:3000",
@@ -33,7 +35,7 @@ async def read_main():
 
 
 @app.get("/points_of_interest")
-async def get_points_of_interest(field: Optional[str] = None, value: Optional[Union[str, int]] = None, limit: int = 20, poly_5: bool = False, poly_10: bool = False, poly_15: bool = False, poly_20: bool = False):
+async def get_points_of_interest(field: Optional[str] = None, value: Optional[Union[str, int]] = None, limit: int = DEFAULT_LIMIT, poly_5: bool = False, poly_10: bool = False, poly_15: bool = False, poly_20: bool = False):
     excludes = {"poly_5": 0, "poly_10": 0, "poly_15": 0, "poly_20": 0}
     if poly_5:
         del excludes["poly_5"]
@@ -50,10 +52,11 @@ async def get_points_of_interest(field: Optional[str] = None, value: Optional[Un
         result = POI(**database.poi.find_one({"_id": ObjectId(str(value))}, excludes))
     else:
         result = [POI(**x) for x in database.poi.find({field: value}, excludes, limit=limit)]
+    
     return { "result": result }
 
 @app.get("/bike_routes")
-async def get_bike_routes(field: Optional[str] = None, value: Optional[Union[str, int]] = None, limit: int = 20, location: bool = False):
+async def get_bike_routes(field: Optional[str] = None, value: Optional[Union[str, int]] = None, limit: int = DEFAULT_LIMIT, location: bool = False):
     excludes = {"location": 0}
     if location:
         del excludes["location"]
@@ -64,4 +67,16 @@ async def get_bike_routes(field: Optional[str] = None, value: Optional[Union[str
         result = BikeRoute(**database.bike_routes.find_one({"_id": ObjectId(str(value))}, excludes))
     else:
         result = [BikeRoute(**x) for x in database.bike_routes.find({field: value}, excludes, limit=limit)]
+    
     return { "result": result }
+
+@app.get("/districts")
+async def get_districts(field: Optional[str] = None, value: Optional[Union[str, int]] = None, limit: int = DEFAULT_LIMIT):
+    if not field or not value:
+        result = [District(**x) for x in database.districts.find({}, limit=limit)]
+    elif field in ["_id", "id"]:
+        result = District(**database.districts.find_one({"_id": ObjectId(str(value))}))
+    else:
+        result = [District(**x) for x in database.districts.find({field: value}, limit=limit)]
+
+    return {"result": result}

@@ -46,6 +46,11 @@ class BikeRoute(PydanticMongoBase):
     valid: bool
     location: Optional[LineString]
 
+class District(PydanticMongoBase):
+    name: str
+    location: Point
+    poly: Polygon
+
 
 if __name__ == "__main__":
     from pymongo import MongoClient
